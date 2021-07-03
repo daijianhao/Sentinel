@@ -95,6 +95,7 @@ public final class SystemRuleManager {
     static {
         checkSystemStatus.set(false);
         statusListener = new SystemStatusListener();
+        //定时计算系统负载
         scheduler.scheduleAtFixedRate(statusListener, 0, 1, TimeUnit.SECONDS);
         currentProperty.addListener(listener);
     }
@@ -292,33 +293,38 @@ public final class SystemRuleManager {
             return;
         }
         // Ensure the checking switch is on.
-        if (!checkSystemStatus.get()) {
+        if (!checkSystemStatus.get()) {//是否需要检查系统状态
             return;
         }
 
         // for inbound traffic only
+        //不是入栈则跳过
         if (resourceWrapper.getEntryType() != EntryType.IN) {
             return;
         }
 
         // total qps
+        //全局QPS检查
         double currentQps = Constants.ENTRY_NODE == null ? 0.0 : Constants.ENTRY_NODE.successQps();
         if (currentQps > qps) {
             throw new SystemBlockException(resourceWrapper.getName(), "qps");
         }
 
         // total thread
+        //全局当前线程数
         int currentThread = Constants.ENTRY_NODE == null ? 0 : Constants.ENTRY_NODE.curThreadNum();
         if (currentThread > maxThread) {
             throw new SystemBlockException(resourceWrapper.getName(), "thread");
         }
 
+        //全局平均响应时间
         double rt = Constants.ENTRY_NODE == null ? 0 : Constants.ENTRY_NODE.avgRt();
         if (rt > maxRt) {
             throw new SystemBlockException(resourceWrapper.getName(), "rt");
         }
 
         // load. BBR algorithm.
+        //最高系统负载检查
         if (highestSystemLoadIsSet && getCurrentSystemAvgLoad() > highestSystemLoad) {
             if (!checkBbr(currentThread)) {
                 throw new SystemBlockException(resourceWrapper.getName(), "load");
@@ -326,6 +332,7 @@ public final class SystemRuleManager {
         }
 
         // cpu usage
+        //检查CPU使用
         if (highestCpuUsageIsSet && getCurrentCpuUsage() > highestCpuUsage) {
             throw new SystemBlockException(resourceWrapper.getName(), "cpu");
         }

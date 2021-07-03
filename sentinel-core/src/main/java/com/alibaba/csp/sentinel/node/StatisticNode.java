@@ -15,16 +15,16 @@
  */
 package com.alibaba.csp.sentinel.node;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.LongAdder;
-
 import com.alibaba.csp.sentinel.node.metric.MetricNode;
 import com.alibaba.csp.sentinel.slots.statistic.metric.ArrayMetric;
 import com.alibaba.csp.sentinel.slots.statistic.metric.Metric;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 import com.alibaba.csp.sentinel.util.function.Predicate;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * <p>The statistic node keep three kinds of real-time statistics metrics:</p>
@@ -83,6 +83,8 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
  *                                                      |
  *                                                    request
  * </pre>
+ * StatisticNode，但是StatisticNode本身也有两个子类，一个是DefaultNode，另一个是ClusterNode，DefaultNode又有一个子类叫EntranceNode。
+ * 统计信息
  *
  * @author qinan.qn
  * @author jialiang.linjl
@@ -92,9 +94,10 @@ public class StatisticNode implements Node {
     /**
      * Holds statistics of the recent {@code INTERVAL} seconds. The {@code INTERVAL} is divided into time spans
      * by given {@code sampleCount}.
+     * 滚动计数器，按秒
      */
     private transient volatile Metric rollingCounterInSecond = new ArrayMetric(SampleCountProperty.SAMPLE_COUNT,
-        IntervalProperty.INTERVAL);
+            IntervalProperty.INTERVAL);
 
     /**
      * Holds statistics of the recent 60 seconds. The windowLengthInMs is deliberately set to 1000 milliseconds,
@@ -143,7 +146,7 @@ public class StatisticNode implements Node {
 
     private boolean isValidMetricNode(MetricNode node) {
         return node.getPassQps() > 0 || node.getBlockQps() > 0 || node.getSuccessQps() > 0
-            || node.getExceptionQps() > 0 || node.getRt() > 0 || node.getOccupiedPassQps() > 0;
+                || node.getExceptionQps() > 0 || node.getRt() > 0 || node.getOccupiedPassQps() > 0;
     }
 
     @Override
@@ -239,7 +242,7 @@ public class StatisticNode implements Node {
 
     @Override
     public int curThreadNum() {
-        return (int)curThreadNum.sum();
+        return (int) curThreadNum.sum();
     }
 
     @Override
@@ -284,15 +287,27 @@ public class StatisticNode implements Node {
         rollingCounterInSecond.debug();
     }
 
+    /**
+     * 尝试占用下一个窗口的资源
+     * @param currentTime  current time millis.
+     * @param acquireCount tokens count to acquire.
+     * @param threshold    qps threshold.
+     * @return
+     */
     @Override
     public long tryOccupyNext(long currentTime, int acquireCount, double threshold) {
+        //IntervalProperty.INTERVAL 为窗口周期
+        //这里maxCount即为一个窗口周期内最大QPS 或线程数
         double maxCount = threshold * IntervalProperty.INTERVAL / 1000;
+        //这里取到所有window的pass的总数
         long currentBorrow = rollingCounterInSecond.waiting();
         if (currentBorrow >= maxCount) {
+            //返回默认占用超时
             return OccupyTimeoutProperty.getOccupyTimeout();
         }
 
         int windowLength = IntervalProperty.INTERVAL / SampleCountProperty.SAMPLE_COUNT;
+        //下一个窗口周期的起始时间
         long earliestTime = currentTime - currentTime % windowLength + windowLength - IntervalProperty.INTERVAL;
 
         int idx = 0;
@@ -309,6 +324,7 @@ public class StatisticNode implements Node {
             }
             long windowPass = rollingCounterInSecond.getWindowPass(earliestTime);
             if (currentPass + currentBorrow + acquireCount - windowPass <= maxCount) {
+                //等待时间
                 return waitInMs;
             }
             earliestTime += windowLength;

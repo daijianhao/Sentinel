@@ -28,7 +28,7 @@ import java.util.List;
 
 /**
  * Builder for a default {@link ProcessorSlotChain}.
- *
+ * SlotChainbuilder的默认实现类
  * @author qinan.qn
  * @author leyou
  */
@@ -37,15 +37,18 @@ public class DefaultSlotChainBuilder implements SlotChainBuilder {
 
     @Override
     public ProcessorSlotChain build() {
+        //创建默认SlotChain
         ProcessorSlotChain chain = new DefaultProcessorSlotChain();
 
+        //加载ProcessorSlot扩展
         List<ProcessorSlot> sortedSlotList = SpiLoader.of(ProcessorSlot.class).loadInstanceListSorted();
         for (ProcessorSlot slot : sortedSlotList) {
             if (!(slot instanceof AbstractLinkedProcessorSlot)) {
+                //类型不符合的直接跳过
                 RecordLog.warn("The ProcessorSlot(" + slot.getClass().getCanonicalName() + ") is not an instance of AbstractLinkedProcessorSlot, can't be added into ProcessorSlotChain");
                 continue;
             }
-
+            //插入到链的末尾
             chain.addLast((AbstractLinkedProcessorSlot<?>) slot);
         }
 

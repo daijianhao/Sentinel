@@ -46,9 +46,12 @@ public class FlowRuleChecker {
         if (ruleProvider == null || resource == null) {
             return;
         }
+        //根据资源名称获取规则
         Collection<FlowRule> rules = ruleProvider.apply(resource.getName());
         if (rules != null) {
+            //遍历流控规则
             for (FlowRule rule : rules) {
+                //检查能否通过
                 if (!canPassCheck(rule, context, node, count, prioritized)) {
                     throw new FlowException(rule.getLimitApp(), rule);
                 }
@@ -68,15 +71,17 @@ public class FlowRuleChecker {
             return true;
         }
 
+        //todo Cluster为分布式系统准备，会启动一个server来接受客户端的token申请
         if (rule.isClusterMode()) {
             return passClusterCheck(rule, context, node, acquireCount, prioritized);
         }
-
+        //local模式为本地应用准备
         return passLocalCheck(rule, context, node, acquireCount, prioritized);
     }
 
     private static boolean passLocalCheck(FlowRule rule, Context context, DefaultNode node, int acquireCount,
                                           boolean prioritized) {
+        //根据流控策略，选择表示对应维度 统计node
         Node selectedNode = selectNodeByRequesterAndStrategy(rule, context, node);
         if (selectedNode == null) {
             return true;

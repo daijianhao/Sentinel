@@ -24,6 +24,9 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 /**
  * Represents a basic structure recording invocation metrics of protected resources.
  *
+ * Metric 是 Sentinel 中用来进行实时数据统计的度量接口，node就是通过metric来进行数据统计的。
+ * 而metric本身也并没有统计的能力，他也是通过Window来进行统计的。
+ *
  * @author jialiang.linjl
  * @author Eric Zhao
  */
@@ -31,63 +34,63 @@ public interface Metric extends DebugSupport {
 
     /**
      * Get total success count.
-     *
+     * 获取总成功数
      * @return success count
      */
     long success();
 
     /**
      * Get max success count.
-     *
+     *获取最大成功数
      * @return max success count
      */
     long maxSuccess();
 
     /**
      * Get total exception count.
-     *
+     * 获取异常数
      * @return exception count
      */
     long exception();
 
     /**
      * Get total block count.
-     *
+     * 获取阻塞数
      * @return block count
      */
     long block();
 
     /**
      * Get total pass count. not include {@link #occupiedPass()}
-     *
+     * 获取通过数
      * @return pass count
      */
     long pass();
 
     /**
      * Get total response time.
-     *
+     * 获取总响应时间
      * @return total RT
      */
     long rt();
 
     /**
      * Get the minimal RT.
-     *
+     * 获取最小响应时间
      * @return minimal RT
      */
     long minRt();
 
     /**
      * Get aggregated metric nodes of all resources.
-     *
+     * 获取所有资源的聚合度量 node
      * @return metric node list of all resources
      */
     List<MetricNode> details();
 
     /**
      * Generate aggregated metric items that satisfies the time predicate.
-     *
+     * 获取满足时间断言的资源的聚合度量 node
      * @param timePredicate time predicate
      * @return aggregated metric items
      * @since 1.7.0

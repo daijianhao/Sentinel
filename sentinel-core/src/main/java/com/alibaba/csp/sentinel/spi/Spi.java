@@ -20,6 +20,8 @@ import java.lang.annotation.*;
 /**
  * Annotation for Provider class of SPI.
  *
+ * sentinel定义的@SPI扩展注解，可自定义Slot
+ *
  * @see SpiLoader
  * @author cdfive
  */

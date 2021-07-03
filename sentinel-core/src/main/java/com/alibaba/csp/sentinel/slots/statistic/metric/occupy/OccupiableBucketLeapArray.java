@@ -33,13 +33,14 @@ public class OccupiableBucketLeapArray extends LeapArray<MetricBucket> {
     public OccupiableBucketLeapArray(int sampleCount, int intervalInMs) {
         // This class is the original "CombinedBucketArray".
         super(sampleCount, intervalInMs);
+        //创建一个只保留未来的bucket的array
         this.borrowArray = new FutureBucketLeapArray(sampleCount, intervalInMs);
     }
 
     @Override
     public MetricBucket newEmptyBucket(long time) {
         MetricBucket newBucket = new MetricBucket();
-
+        //尝试借一个
         MetricBucket borrowBucket = borrowArray.getWindowValue(time);
         if (borrowBucket != null) {
             newBucket.reset(borrowBucket);
@@ -65,13 +66,16 @@ public class OccupiableBucketLeapArray extends LeapArray<MetricBucket> {
 
     @Override
     public long currentWaiting() {
+        //没有则会创建当前的 window
         borrowArray.currentWindow();
         long currentWaiting = 0;
+        //获取所有 bucket
         List<MetricBucket> list = borrowArray.values();
 
         for (MetricBucket window : list) {
             currentWaiting += window.pass();
         }
+        //返回通过总数
         return currentWaiting;
     }
 

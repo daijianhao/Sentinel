@@ -34,6 +34,8 @@ public final class SlotChainProvider {
      * via {@code lookProcessChain} in {@link com.alibaba.csp.sentinel.CtSph} under lock.
      *
      * @return new created slot chain
+     *
+     * 创建新的chain ,本方法的调用者都加锁了，所以这里是线程安全的
      */
     public static ProcessorSlotChain newSlotChain() {
         if (slotChainBuilder != null) {
@@ -41,16 +43,20 @@ public final class SlotChainProvider {
         }
 
         // Resolve the slot chain builder SPI.
+        //建造器模式
+        //这里尝试从Spi加载扩展的builder
         slotChainBuilder = SpiLoader.of(SlotChainBuilder.class).loadFirstInstanceOrDefault();
 
         if (slotChainBuilder == null) {
             // Should not go through here.
             RecordLog.warn("[SlotChainProvider] Wrong state when resolving slot chain builder, using default");
+            //失败了则使用默认的builder
             slotChainBuilder = new DefaultSlotChainBuilder();
         } else {
             RecordLog.info("[SlotChainProvider] Global slot chain builder resolved: {}",
                 slotChainBuilder.getClass().getCanonicalName());
         }
+        //构造chain
         return slotChainBuilder.build();
     }
 

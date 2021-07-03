@@ -27,6 +27,8 @@ import com.alibaba.csp.sentinel.spi.Spi;
 /**
  * A {@link com.alibaba.csp.sentinel.slotchain.ProcessorSlot} that is response for logging block exceptions
  * to provide concrete logs for troubleshooting.
+ *
+ * 异常情况记录日志
  */
 @Spi(order = Constants.ORDER_LOG_SLOT)
 public class LogSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
@@ -37,6 +39,7 @@ public class LogSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
         try {
             fireEntry(context, resourceWrapper, obj, count, prioritized, args);
         } catch (BlockException e) {
+            //增加阻塞异常捕获
             EagleEyeLogUtil.log(resourceWrapper.getName(), e.getClass().getSimpleName(), e.getRuleLimitApp(),
                 context.getOrigin(), count);
             throw e;

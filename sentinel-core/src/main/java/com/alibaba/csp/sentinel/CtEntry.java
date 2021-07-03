@@ -43,6 +43,7 @@ class CtEntry extends Entry {
 
     CtEntry(ResourceWrapper resourceWrapper, ProcessorSlot<Object> chain, Context context) {
         super(resourceWrapper);
+        //设置当前entry的chain和context
         this.chain = chain;
         this.context = context;
 
@@ -54,10 +55,18 @@ class CtEntry extends Entry {
         if (context instanceof NullContext) {
             return;
         }
+        //设置context的当前entry，可能是null
+        /**
+         * 申请entry的操作可能存在嵌套调用的情况
+         * 初始时（即调用链上的第一个entry） parent==null, 若在当前 entry范围内再次申请其他entry，则
+         * 则此时context.getCurEntry()不为 null，所以设置当前正在申请的 entry.parent = context.getCurEntry()
+         */
         this.parent = context.getCurEntry();
         if (parent != null) {
+            //形成相互引用
             ((CtEntry) parent).child = this;
         }
+        //设置context的当前entry为this
         context.setCurEntry(this);
     }
 
@@ -90,12 +99,14 @@ class CtEntry extends Entry {
                 return;
             }
 
-            if (context.getCurEntry() != this) {
+            if (context.getCurEntry() != this) {//不相等，说明出现了问题，
+                // 正常情况下，每个线程进入申请一个entry时，都会设置当前entry,退出时当前entry应当与this相等
                 String curEntryNameInContext = context.getCurEntry() == null ? null
                     : context.getCurEntry().getResourceWrapper().getName();
                 // Clean previous call stack.
                 CtEntry e = (CtEntry) context.getCurEntry();
                 while (e != null) {
+                    //依次退出
                     e.exit(count, args);
                     e = (CtEntry) e.parent;
                 }
@@ -106,23 +117,28 @@ class CtEntry extends Entry {
             } else {
                 // Go through the onExit hook of all slots.
                 if (chain != null) {
+                    //通过chain依次调用退出
                     chain.exit(context, resourceWrapper, count, args);
                 }
                 // Go through the existing terminate handlers (associated to this invocation).
+                //执行退出回调
                 callExitHandlersAndCleanUp(context);
 
                 // Restore the call stack.
+                //将当前entry设置回上一个
                 context.setCurEntry(parent);
                 if (parent != null) {
                     ((CtEntry) parent).child = null;
                 }
-                if (parent == null) {
+                if (parent == null) {//parent==null,说明当前这个entry的作用范围要结束了
                     // Default context (auto entered) will be exited automatically.
                     if (ContextUtil.isDefaultContext(context)) {
+                        //清理threadLocal中的context
                         ContextUtil.exit();
                     }
                 }
                 // Clean the reference of context in current entry to avoid duplicate exit.
+                //删除entry中的context引用
                 clearEntryContext();
             }
         }

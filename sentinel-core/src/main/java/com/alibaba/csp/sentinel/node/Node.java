@@ -26,6 +26,8 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 /**
  * Holds real-time statistics for resources.
  *
+ * Node 中保存了资源的实时统计数据，例如：passQps，blockQps，rt等实时数据。正是有了这些统计数据后， Sentinel 才能进行限流、降级等一系列的操作。
+ *
  * @author qinan.qn
  * @author leyou
  * @author Eric Zhao

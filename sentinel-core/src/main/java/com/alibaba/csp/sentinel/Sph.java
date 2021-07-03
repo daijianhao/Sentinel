@@ -23,6 +23,8 @@ import com.alibaba.csp.sentinel.slots.system.SystemRule;
 /**
  * The basic interface for recording statistics and performing rule checking for resources.
  *
+ * SphResourceTypeSupport的子接口主要是在 SphResourceTypeSupport上增加了 一些直接申请entry的方法，减少了参数
+ *
  * @author qinan.qn
  * @author jialiang.linjl
  * @author leyou

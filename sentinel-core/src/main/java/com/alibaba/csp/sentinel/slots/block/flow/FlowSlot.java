@@ -135,12 +135,16 @@ import java.util.Map;
  * </p>
  * </ol>
  *
+ *  用于根据预设的限流规则，以及前面 slot 统计的状态，来进行限流
  * @author jialiang.linjl
  * @author Eric Zhao
  */
 @Spi(order = Constants.ORDER_FLOW_SLOT)
 public class FlowSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
 
+    /**
+     * 流量规则校验器
+     */
     private final FlowRuleChecker checker;
 
     public FlowSlot() {
@@ -161,6 +165,7 @@ public class FlowSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
     @Override
     public void entry(Context context, ResourceWrapper resourceWrapper, DefaultNode node, int count,
                       boolean prioritized, Object... args) throws Throwable {
+        //流量检查
         checkFlow(resourceWrapper, context, node, count, prioritized);
 
         fireEntry(context, resourceWrapper, node, count, prioritized, args);

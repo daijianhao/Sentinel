@@ -18,6 +18,9 @@ package com.alibaba.csp.sentinel.slotchain;
 import com.alibaba.csp.sentinel.context.Context;
 
 /**
+ *
+ * 可形成链表的插槽
+ *
  * @author qinan.qn
  * @author jialiang.linjl
  */

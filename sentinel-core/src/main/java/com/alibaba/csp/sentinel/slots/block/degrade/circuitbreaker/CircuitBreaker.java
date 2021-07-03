@@ -57,6 +57,7 @@ public interface CircuitBreaker {
     void onRequestComplete(Context context);
 
     /**
+     * 熔断器的状态
      * Circuit breaker state.
      */
     enum State {

@@ -48,6 +48,9 @@ public class FlowRule extends AbstractRule {
 
     /**
      * The threshold type of flow control (0: thread count, 1: QPS).
+     *
+     * 流控阈值的类型
+     * 按线程数或QPS
      */
     private int grade = RuleConstant.FLOW_GRADE_QPS;
 

@@ -31,6 +31,8 @@ import com.alibaba.csp.sentinel.spi.Spi;
 /**
  * A {@link ProcessorSlot} dedicates to circuit breaking.
  *
+ * 通过统计信息，以及预设的规则，来做熔断降级
+ *
  * @author Carpenter Lee
  * @author Eric Zhao
  */
@@ -40,17 +42,20 @@ public class DegradeSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
     @Override
     public void entry(Context context, ResourceWrapper resourceWrapper, DefaultNode node, int count,
                       boolean prioritized, Object... args) throws Throwable {
+        //性能检查
         performChecking(context, resourceWrapper);
 
         fireEntry(context, resourceWrapper, node, count, prioritized, args);
     }
 
     void performChecking(Context context, ResourceWrapper r) throws BlockException {
+        //获取降级规则
         List<CircuitBreaker> circuitBreakers = DegradeRuleManager.getCircuitBreakers(r.getName());
         if (circuitBreakers == null || circuitBreakers.isEmpty()) {
             return;
         }
         for (CircuitBreaker cb : circuitBreakers) {
+            //检查能否通过
             if (!cb.tryPass(context)) {
                 throw new DegradeException(cb.getRule().getLimitApp(), cb.getRule());
             }
@@ -66,6 +71,7 @@ public class DegradeSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
         }
         List<CircuitBreaker> circuitBreakers = DegradeRuleManager.getCircuitBreakers(r.getName());
         if (circuitBreakers == null || circuitBreakers.isEmpty()) {
+            //没有熔断规则，直接调用下一个
             fireExit(context, r, count, args);
             return;
         }
@@ -73,6 +79,7 @@ public class DegradeSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
         if (curEntry.getBlockError() == null) {
             // passed request
             for (CircuitBreaker circuitBreaker : circuitBreakers) {
+                //触发请求完成回调
                 circuitBreaker.onRequestComplete(context);
             }
         }

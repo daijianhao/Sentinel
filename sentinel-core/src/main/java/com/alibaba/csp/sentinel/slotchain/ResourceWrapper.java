@@ -20,16 +20,31 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
  * A wrapper of resource name and type.
- *
+ * 表示受保护的资源的抽象，任何后面需要保护的内容都可抽象成为资源
  * @author qinan.qn
  * @author jialiang.linjl
  * @author Eric Zhao
  */
 public abstract class ResourceWrapper {
 
+    /**
+     * 资源名称
+     */
     protected final String name;
 
+    /**
+     * 限流凭证的类型
+     */
     protected final EntryType entryType;
+
+    /**
+     * 资源的类型
+     * COMMON = 0;
+     * COMMON_WEB = 1;
+     * COMMON_RPC = 2;
+     * COMMON_API_GATEWAY = 3;
+     * COMMON_DB_SQL = 4;
+     */
     protected final int resourceType;
 
     public ResourceWrapper(String name, EntryType entryType, int resourceType) {
@@ -85,6 +100,8 @@ public abstract class ResourceWrapper {
 
     /**
      * Only {@link #getName()} is considered.
+     *
+     * 名称相等即相等
      */
     @Override
     public boolean equals(Object obj) {

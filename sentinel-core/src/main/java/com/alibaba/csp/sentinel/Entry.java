@@ -43,6 +43,13 @@ import com.alibaba.csp.sentinel.context.Context;
  * {@link Context#setCurEntry(Entry)} as parent entry of this.
  * </p>
  *
+ *
+ * Entry 是 Sentinel 中用来表示是否通过限流的一个凭证，就像一个token一样。每次执行 SphU.entry() 或 SphO.entry() 都会返回一个 Entry
+ * 给调用者，意思就是告诉调用者，如果正确返回了 Entry 给你，那表示你可以正常访问被 Sentinel 保护的后方服务了，
+ * 否则 Sentinel 会抛出一个BlockException(如果是 SphO.entry() 会返回false)，这就表示调用者想要访问的服务被保护了，
+ * 也就是说调用者本身被限流了。
+ *
+ *
  * @author qinan.qn
  * @author jialiang.linjl
  * @author leyou(lihao)
@@ -55,18 +62,32 @@ public abstract class Entry implements AutoCloseable {
 
     private static final Object[] OBJECTS0 = new Object[0];
 
+    /**
+     * 创建时间
+     */
     private final long createTimestamp;
+    /**
+     * 完成时间
+     */
     private long completeTimestamp;
 
+    /**
+     * 当前进入到哪个node了，在插槽中设置
+     */
     private Node curNode;
     /**
      * {@link Node} of the specific origin, Usually the origin is the Service Consumer.
+     *
+     * 表示调用源的node
      */
     private Node originNode;
 
     private Throwable error;
     private BlockException blockError;
 
+    /**
+     * 当前保护的资源
+     */
     protected final ResourceWrapper resourceWrapper;
 
     public Entry(ResourceWrapper resourceWrapper) {

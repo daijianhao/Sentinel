@@ -20,6 +20,12 @@ import com.alibaba.csp.sentinel.context.Context;
 /**
  * A container of some process and ways of notification when the process is finished.
  *
+ *
+ * 插槽。Sentinel的整个工作流程就是围绕一个个插槽组成的插槽链展开的。
+ * 每个插槽都有自己的职责，通过一定的编排顺序，来达到最终限流降级的目的。
+ * 默认提供的插槽执行顺序是固定的，因为有的插槽需要其他插槽的执行结果才能工作。
+ * 有点类似过滤器
+ *
  * @author qinan.qn
  * @author jialiang.linjl
  * @author leyou(lihao)

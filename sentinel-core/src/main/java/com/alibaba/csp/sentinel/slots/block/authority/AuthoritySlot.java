@@ -29,6 +29,8 @@ import com.alibaba.csp.sentinel.spi.Spi;
 /**
  * A {@link ProcessorSlot} that dedicates to {@link AuthorityRule} checking.
  *
+ * 根据黑白名单，来做黑白名单控制
+ *
  * @author leyou
  * @author Eric Zhao
  */
@@ -38,6 +40,7 @@ public class AuthoritySlot extends AbstractLinkedProcessorSlot<DefaultNode> {
     @Override
     public void entry(Context context, ResourceWrapper resourceWrapper, DefaultNode node, int count, boolean prioritized, Object... args)
         throws Throwable {
+        //检查黑白名单
         checkBlackWhiteAuthority(resourceWrapper, context);
         fireEntry(context, resourceWrapper, node, count, prioritized, args);
     }
@@ -48,6 +51,7 @@ public class AuthoritySlot extends AbstractLinkedProcessorSlot<DefaultNode> {
     }
 
     void checkBlackWhiteAuthority(ResourceWrapper resource, Context context) throws AuthorityException {
+        //获取黑白名单规则
         Map<String, Set<AuthorityRule>> authorityRules = AuthorityRuleManager.getAuthorityRules();
 
         if (authorityRules == null) {
@@ -60,6 +64,7 @@ public class AuthoritySlot extends AbstractLinkedProcessorSlot<DefaultNode> {
         }
 
         for (AuthorityRule rule : rules) {
+            //校验规则
             if (!AuthorityRuleChecker.passCheck(rule, context)) {
                 throw new AuthorityException(context.getOrigin(), rule);
             }

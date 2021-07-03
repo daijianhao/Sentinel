@@ -23,11 +23,26 @@ import com.alibaba.csp.sentinel.util.TimeUtil;
 import com.alibaba.csp.sentinel.node.Node;
 
 /**
+ *
+ * 这是一种基于频率的限流策略，DefaultController关注的是QPS的绝对值，而RateLimiterController关注的是流量进来的间隔时间，
+ * 如果定义QPS阈值为10，使用DefaultController的策略，无论流量在一秒内的某个ms单位时间点同时进来，
+ * 还是均匀的每100ms进来一个请求，都是一视同仁的，都可以通过。使用RateLimiterControlle策略，
+ * 则要求每一个请求，距离上一次请求通过的间隔，必须大于等于100ms，才可以放行，否则必须sleep一段时间，
+ * 直到间隔大于等于100ms，否则拒绝。可以认为这是一种基于固定频率的限流机制。
+ *
+ *
+ *
  * @author jialiang.linjl
  */
 public class RateLimiterController implements TrafficShapingController {
 
+    /**
+     * 最大等待时间
+     */
     private final int maxQueueingTimeMs;
+    /**
+     * 每秒的请求数
+     */
     private final double count;
 
     private final AtomicLong latestPassedTime = new AtomicLong(-1);
@@ -56,17 +71,21 @@ public class RateLimiterController implements TrafficShapingController {
 
         long currentTime = TimeUtil.currentTimeMillis();
         // Calculate the interval between every two requests.
+        //计算两个请求间的时间间隔
         long costTime = Math.round(1.0 * (acquireCount) / count * 1000);
 
         // Expected pass time of this request.
+        //第二个请求的预计时间
         long expectedTime = costTime + latestPassedTime.get();
 
         if (expectedTime <= currentTime) {
+            //通过
             // Contention may exist here, but it's okay.
             latestPassedTime.set(currentTime);
             return true;
         } else {
             // Calculate the time to wait.
+            //计算等待时间
             long waitTime = costTime + latestPassedTime.get() - TimeUtil.currentTimeMillis();
             if (waitTime > maxQueueingTimeMs) {
                 return false;
@@ -80,6 +99,7 @@ public class RateLimiterController implements TrafficShapingController {
                     }
                     // in race condition waitTime may <= 0
                     if (waitTime > 0) {
+                        //等待一段时间
                         Thread.sleep(waitTime);
                     }
                     return true;

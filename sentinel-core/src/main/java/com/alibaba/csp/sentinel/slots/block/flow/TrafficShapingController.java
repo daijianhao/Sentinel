@@ -20,6 +20,7 @@ import com.alibaba.csp.sentinel.node.Node;
 /**
  * A universal interface for traffic shaping controller.
  *
+ * 削峰控制器
  * @author jialiang.linjl
  */
 public interface TrafficShapingController {

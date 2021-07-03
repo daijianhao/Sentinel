@@ -20,6 +20,7 @@ import com.alibaba.csp.sentinel.ResourceTypeConstants;
 
 /**
  * Common string resource wrapper.
+ * 通用的资源
  *
  * @author qinan.qn
  * @author jialiang.linjl
@@ -42,9 +43,9 @@ public class StringResourceWrapper extends ResourceWrapper {
     @Override
     public String toString() {
         return "StringResourceWrapper{" +
-            "name='" + name + '\'' +
-            ", entryType=" + entryType +
-            ", resourceType=" + resourceType +
-            '}';
+                "name='" + name + '\'' +
+                ", entryType=" + entryType +
+                ", resourceType=" + resourceType +
+                '}';
     }
 }

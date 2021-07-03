@@ -222,7 +222,7 @@ public final class SentinelConfig {
 
     /**
      * <p>Get the max RT value that Sentinel could accept for system BBR strategy.</p>
-     *
+     * 获取最大可接受的响应时间
      * @return the max allowed RT value
      * @since 1.4.1
      */

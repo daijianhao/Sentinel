@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel;
 /**
  * An enum marks resource invocation direction.
  *
+ * entry的类型，出栈和入栈
+ *
  * @author jialiang.linjl
  */
 public enum EntryType {

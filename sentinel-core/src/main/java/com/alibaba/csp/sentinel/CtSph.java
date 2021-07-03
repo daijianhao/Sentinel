@@ -35,6 +35,8 @@ import com.alibaba.csp.sentinel.slots.block.Rule;
 /**
  * {@inheritDoc}
  *
+ * 申请entry的最终实现类
+ *
  * @author jialiang.linjl
  * @author leyou(lihao)
  * @author Eric Zhao
@@ -45,12 +47,17 @@ public class CtSph implements Sph {
     private static final Object[] OBJECTS0 = new Object[0];
 
     /**
+     * 资源与插槽链的对应关系
+     * 插槽链类似过滤器链
      * Same resource({@link ResourceWrapper#equals(Object)}) will share the same
      * {@link ProcessorSlotChain}, no matter in which {@link Context}.
      */
     private static volatile Map<ResourceWrapper, ProcessorSlotChain> chainMap
         = new HashMap<ResourceWrapper, ProcessorSlotChain>();
 
+    /**
+     * 锁对象
+     */
     private static final Object LOCK = new Object();
 
     private AsyncEntry asyncEntryWithNoChain(ResourceWrapper resourceWrapper, Context context) {
@@ -114,25 +121,34 @@ public class CtSph implements Sph {
         return asyncEntryWithPriorityInternal(resourceWrapper, count, false, args);
     }
 
+    /**
+     * 实际获取entry的方法，带优先级
+     */
     private Entry entryWithPriority(ResourceWrapper resourceWrapper, int count, boolean prioritized, Object... args)
         throws BlockException {
+        //获取当前线程的context
         Context context = ContextUtil.getContext();
         if (context instanceof NullContext) {
             // The {@link NullContext} indicates that the amount of context has exceeded the threshold,
             // so here init the entry only. No rule checking will be done.
+            //这里表明context名称已经达到上限，直接返回一个没有过滤器链 的 entry
             return new CtEntry(resourceWrapper, null, context);
         }
 
         if (context == null) {
+            //最开始申请entry时 context 为 null ,进入此处
             // Using default context.
+            //使用默认名称创建context
             context = InternalContextUtil.internalEnter(Constants.CONTEXT_DEFAULT_NAME);
         }
 
         // Global switch is close, no rule checking will do.
         if (!Constants.ON) {
+            //系统已经关闭sentinel功能，则直接返回一个无chain的entry
             return new CtEntry(resourceWrapper, null, context);
         }
 
+        //查找当前资源的SlotChain
         ProcessorSlot<Object> chain = lookProcessChain(resourceWrapper);
 
         /*
@@ -140,19 +156,23 @@ public class CtSph implements Sph {
          * so no rule checking will be done.
          */
         if (chain == null) {
+            //返回无chain Entry
             return new CtEntry(resourceWrapper, null, context);
         }
-
+        //返回entry
         Entry e = new CtEntry(resourceWrapper, chain, context);
         try {
+            //todo 这里创建entry后便尝试进入保护资源的逻辑
             chain.entry(context, resourceWrapper, null, count, prioritized, args);
         } catch (BlockException e1) {
+            //捕获阻塞异常，退出entry
             e.exit(count, args);
             throw e1;
         } catch (Throwable e1) {
             // This should not happen, unless there are errors existing in Sentinel internal.
             RecordLog.info("Sentinel unexpected exception", e1);
         }
+        //返回entry
         return e;
     }
 
@@ -195,17 +215,19 @@ public class CtSph implements Sph {
         ProcessorSlotChain chain = chainMap.get(resourceWrapper);
         if (chain == null) {
             synchronized (LOCK) {
+                //双锁检测
                 chain = chainMap.get(resourceWrapper);
                 if (chain == null) {
                     // Entry size limit.
                     if (chainMap.size() >= Constants.MAX_SLOT_CHAIN_SIZE) {
                         return null;
                     }
-
+                    //创建新的chain
                     chain = SlotChainProvider.newSlotChain();
                     Map<ResourceWrapper, ProcessorSlotChain> newMap = new HashMap<ResourceWrapper, ProcessorSlotChain>(
                         chainMap.size() + 1);
                     newMap.putAll(chainMap);
+                    //将资源和chain的关系保存
                     newMap.put(resourceWrapper, chain);
                     chainMap = newMap;
                 }
@@ -247,6 +269,7 @@ public class CtSph implements Sph {
      */
     private final static class InternalContextUtil extends ContextUtil {
         static Context internalEnter(String name) {
+            //没有则创建context
             return trueEnter(name, "");
         }
 
@@ -340,10 +363,23 @@ public class CtSph implements Sph {
         return entryWithType(name, resourceType, entryType, count, false, args);
     }
 
+    /**
+     * 实现方法
+     * @param name         the unique name of the protected resource  资源唯一名称
+     * @param resourceType classification of the resource (e.g. Web or RPC) 资源类型
+     * @param entryType
+     * @param count
+     * @param prioritized  whether the entry is prioritized 是否优先处理
+     * @param args         args for parameter flow control or customized slots  参数
+     * @return
+     * @throws BlockException
+     */
     @Override
     public Entry entryWithType(String name, int resourceType, EntryType entryType, int count, boolean prioritized,
                                Object[] args) throws BlockException {
+        //将名称 entryType resourceType等封装为StringResource
         StringResourceWrapper resource = new StringResourceWrapper(name, entryType, resourceType);
+        //调用内部方法
         return entryWithPriority(resource, count, prioritized, args);
     }
 

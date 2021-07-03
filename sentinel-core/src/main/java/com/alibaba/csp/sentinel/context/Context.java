@@ -48,6 +48,22 @@ import com.alibaba.csp.sentinel.slots.nodeselector.NodeSelectorSlot;
  * Same resource in different context will count separately, see {@link NodeSelectorSlot}.
  * </p>
  *
+ * Context上下文Sentinel运行时一个调用链的元数据存储区。主要的元数据有：
+ *
+ * entranceNode：当前调用链的入口节点
+ * curEntry：当前调用链的当前entry
+ * node：与当前entry所对应的curNode
+ * origin：当前调用链的调用源
+ *
+ *
+ * 每次调用 SphU.entry() 或 SphO.entry()时，当框架没有找到对应的Context时，
+ * 就会创建一个Context对象来存储元数据信息。当然我们可以通过收到调用的方式提前准备好Context，
+ * 调用方法是：com.alibaba.csp.sentinel.context.ContextUtil#enter(java.lang.String, java.lang.String)
+ *
+ * Context存储在ThreadLocal中的，也就是说他是一个线程上下文。
+ * 当我们执行entry完成后，需要清理这个ThreadLocal，需要执行entry.exit()方法，该方法也会进行链式调用，
+ * 当发现parent==null时，也就代表执行到了最上层的节点，此时会清空Context
+ *
  * @author jialiang.linjl
  * @author leyou(lihao)
  * @author Eric Zhao
@@ -58,24 +74,32 @@ public class Context {
 
     /**
      * Context name.
+     * 当前上下文名称
      */
     private final String name;
 
     /**
      * The entrance node of current invocation tree.
+     *
+     * 当前调用链的入口节点
      */
     private DefaultNode entranceNode;
 
     /**
      * Current processing entry.
+     * 当前调用链使用的 Entry
      */
     private Entry curEntry;
 
     /**
      * The origin of this context (usually indicate different invokers, e.g. service consumer name or origin IP).
+     * 当前调用链的调用源
      */
     private String origin = "";
 
+    /**
+     * 是否异步 todo 作用？
+     */
     private final boolean async;
 
     /**
@@ -113,6 +137,7 @@ public class Context {
     }
 
     public Context setCurNode(Node node) {
+        //设置entry当前node
         this.curEntry.setCurNode(node);
         return this;
     }
@@ -178,8 +203,12 @@ public class Context {
      */
     public Node getLastNode() {
         if (curEntry != null && curEntry.getLastNode() != null) {
+            //获取当前entry的lastNode,如果curEntry为调用链上的第一个entry则返回null
             return curEntry.getLastNode();
         } else {
+            //todo 什么情况会出现curEntry==null？
+            //每个Entry在创建时，都将自身设置为当前Context的curEntry了的
+            //返回调用入口的node , entranceNode 与context是一一对应的
             return entranceNode;
         }
     }

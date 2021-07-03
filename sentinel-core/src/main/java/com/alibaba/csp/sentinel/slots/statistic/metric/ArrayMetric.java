@@ -38,6 +38,7 @@ public class ArrayMetric implements Metric {
     private final LeapArray<MetricBucket> data;
 
     public ArrayMetric(int sampleCount, int intervalInMs) {
+        //创建可被占用的LeapArray
         this.data = new OccupiableBucketLeapArray(sampleCount, intervalInMs);
     }
 

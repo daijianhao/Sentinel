@@ -146,6 +146,7 @@ public class FlowQpsDemo {
                 } finally {
                     total.incrementAndGet();
                     if (entry != null) {
+                        //退出entry
                         entry.exit();
                     }
                 }

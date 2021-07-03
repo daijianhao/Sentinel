@@ -21,20 +21,25 @@ import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Represents metrics data in a period of time span.
- *
+ * 表示一段时间内的度量数据
  * @author jialiang.linjl
  * @author Eric Zhao
  */
 public class MetricBucket {
 
+    /**
+     * 计数器数组
+     */
     private final LongAdder[] counters;
 
     private volatile long minRt;
 
     public MetricBucket() {
+        //获取度量事件数组
         MetricEvent[] events = MetricEvent.values();
         this.counters = new LongAdder[events.length];
         for (MetricEvent event : events) {
+            //按索引赋值
             counters[event.ordinal()] = new LongAdder();
         }
         initMinRt();
@@ -50,6 +55,7 @@ public class MetricBucket {
     }
 
     private void initMinRt() {
+        //初始化最小响应时间
         this.minRt = SentinelConfig.statisticMaxRt();
     }
 

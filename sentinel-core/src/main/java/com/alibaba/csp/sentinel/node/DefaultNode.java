@@ -106,6 +106,10 @@ public class DefaultNode extends StatisticNode {
         return childList;
     }
 
+    /**
+     * 对node的计数信息的改变都会体现在ClusterNode上，相当于聚合
+     * @param count
+     */
     @Override
     public void increaseBlockQps(int count) {
         super.increaseBlockQps(count);

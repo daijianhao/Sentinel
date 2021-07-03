@@ -51,6 +51,9 @@ public class ContextUtil {
 
     /**
      * Holds all {@link EntranceNode}. Each {@link EntranceNode} is associated with a distinct context name.
+     *
+     * context名称和 入口点 node对应关系
+     *
      */
     private static volatile Map<String, DefaultNode> contextNameNodeMap = new HashMap<>();
 
@@ -63,8 +66,10 @@ public class ContextUtil {
     }
 
     private static void initDefaultContext() {
+        //初始化时将默认context名称和 EntranceNode 放入
         String defaultContextName = Constants.CONTEXT_DEFAULT_NAME;
         EntranceNode node = new EntranceNode(new StringResourceWrapper(defaultContextName, EntryType.IN), null);
+        //将 node 放到ROOT下
         Constants.ROOT.addChild(node);
         contextNameNodeMap.put(defaultContextName, node);
     }
@@ -120,27 +125,34 @@ public class ContextUtil {
     protected static Context trueEnter(String name, String origin) {
         Context context = contextHolder.get();
         if (context == null) {
+            //创建context
             Map<String, DefaultNode> localCacheNameMap = contextNameNodeMap;
             DefaultNode node = localCacheNameMap.get(name);
             if (node == null) {
+                //创建node
                 if (localCacheNameMap.size() > Constants.MAX_CONTEXT_NAME_SIZE) {
+                    //超过了最大context数量，设置一个NULL_CONTEXT
                     setNullContext();
                     return NULL_CONTEXT;
                 } else {
                     LOCK.lock();
                     try {
+                        //这里也是双锁检测
                         node = contextNameNodeMap.get(name);
                         if (node == null) {
                             if (contextNameNodeMap.size() > Constants.MAX_CONTEXT_NAME_SIZE) {
                                 setNullContext();
                                 return NULL_CONTEXT;
                             } else {
+                                //创建一个入口 node
                                 node = new EntranceNode(new StringResourceWrapper(name, EntryType.IN), null);
                                 // Add entrance node.
+                                //加入到root下，每个入口node都会加入到root下
                                 Constants.ROOT.addChild(node);
 
                                 Map<String, DefaultNode> newMap = new HashMap<>(contextNameNodeMap.size() + 1);
                                 newMap.putAll(contextNameNodeMap);
+                                //将context名称和入口node对应关系保存
                                 newMap.put(name, node);
                                 contextNameNodeMap = newMap;
                             }
@@ -150,8 +162,10 @@ public class ContextUtil {
                     }
                 }
             }
+            //创建context
             context = new Context(node, name);
             context.setOrigin(origin);
+            //将context绑定到threadLocal
             contextHolder.set(context);
         }
 

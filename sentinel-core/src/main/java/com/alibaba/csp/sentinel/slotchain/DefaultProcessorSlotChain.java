@@ -18,11 +18,17 @@ package com.alibaba.csp.sentinel.slotchain;
 import com.alibaba.csp.sentinel.context.Context;
 
 /**
+ *
+ * 默认SlotChain
+ *
  * @author qinan.qn
  * @author jialiang.linjl
  */
 public class DefaultProcessorSlotChain extends ProcessorSlotChain {
 
+    /**
+     * 头结点
+     */
     AbstractLinkedProcessorSlot<?> first = new AbstractLinkedProcessorSlot<Object>() {
 
         @Override
@@ -37,6 +43,9 @@ public class DefaultProcessorSlotChain extends ProcessorSlotChain {
         }
 
     };
+    /**
+     * 尾结点
+     */
     AbstractLinkedProcessorSlot<?> end = first;
 
     @Override

@@ -44,6 +44,11 @@ import com.alibaba.csp.sentinel.spi.Spi;
  * default nodes.
  * </p>
  *
+ * 用于存储资源的统计信息以及调用者信息，例如该资源的 RT, QPS, thread count 等等，这些信息将用作为多维度限流，降级的依据
+ *
+ *
+ * ClusterNode与NodeSelected中的Node区别在于：
+ *      后者是按context维度的，而前者是按resource维度的，相当于同一个resource的数据都集中在ClusterNode上，这样在统计各种信息时有多种维度
  * @author jialiang.linjl
  */
 @Spi(isSingleton = false, order = Constants.ORDER_CLUSTER_BUILDER_SLOT)
@@ -84,6 +89,7 @@ public class ClusterBuilderSlot extends AbstractLinkedProcessorSlot<DefaultNode>
                     clusterNode = new ClusterNode(resourceWrapper.getName(), resourceWrapper.getResourceType());
                     HashMap<ResourceWrapper, ClusterNode> newMap = new HashMap<>(Math.max(clusterNodeMap.size(), 16));
                     newMap.putAll(clusterNodeMap);
+                    //保存ClusterNode
                     newMap.put(node.getId(), clusterNode);
 
                     clusterNodeMap = newMap;
@@ -97,7 +103,9 @@ public class ClusterBuilderSlot extends AbstractLinkedProcessorSlot<DefaultNode>
          * the specific origin.
          */
         if (!"".equals(context.getOrigin())) {
+            //todo 这里与ClusterNode类似，是想从调用源的维度统计信息
             Node originNode = node.getClusterNode().getOrCreateOriginNode(context.getOrigin());
+            //创建originNode并保存
             context.getCurEntry().setOriginNode(originNode);
         }
 

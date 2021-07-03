@@ -75,7 +75,7 @@ public class SystemStatusListener implements Runnable {
             processUpTime = newProcessUpTime;
 
             currentCpuUsage = Math.max(processCpuUsage, systemCpuUsage);
-
+            //超过系统负载阈值，打印日志
             if (currentLoad > SystemRuleManager.getSystemLoadThreshold()) {
                 writeSystemStatusLog();
             }

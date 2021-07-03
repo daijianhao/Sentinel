@@ -44,6 +44,8 @@ import com.alibaba.csp.sentinel.property.SentinelProperty;
  * </ol>
  * </p>
  *
+ * 流控规则管理器
+ *
  * @author jialiang.linjl
  * @author Eric Zhao
  * @author Weihua
@@ -61,6 +63,7 @@ public class FlowRuleManager {
 
     static {
         flowRules.set(Collections.<String, List<FlowRule>>emptyMap());
+        //增加配置监听器
         currentProperty.addListener(LISTENER);
         startMetricTimerListener();
     }
@@ -75,6 +78,7 @@ public class FlowRuleManager {
      * <ol></p>
      */
     private static void startMetricTimerListener() {
+        //刷新间隔时间
         long flushInterval = SentinelConfig.metricLogFlushIntervalSec();
         if (flushInterval <= 0) {
             RecordLog.info("[FlowRuleManager] The MetricTimerListener is'n started. If you want to start it, "
@@ -82,6 +86,7 @@ public class FlowRuleManager {
                     SentinelConfig.METRIC_FLUSH_INTERVAL);
             return;
         }
+        //定时刷新
         SCHEDULER.scheduleAtFixedRate(new MetricTimerListener(), 0, flushInterval, TimeUnit.SECONDS);
     }
     

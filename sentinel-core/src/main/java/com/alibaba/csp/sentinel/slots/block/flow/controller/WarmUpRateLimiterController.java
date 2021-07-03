@@ -21,6 +21,13 @@ import com.alibaba.csp.sentinel.node.Node;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
+ *
+ * 这种策略可以认为是基于频率限流RateLimiterController的WarmUp版，也是以一个较低初始频率，逐步爬坡到目标频率。
+ * 其实现类继承自WarmUpController，各种指标计算公式完成复用的，只是把WarmUpController计算得出的qps转换成频率进行限流。
+ * 比如冷启动时间10s，最大QPS为20的配置下，WarmUpController会把QPS逐步从6.66QPS在10s的时间内爬升到20QPS，
+ * 相应的，RateLimiterController会将这个间隔从150ms逐步降低到50ms。
+ *
+ *
  * @author jialiang.linjl
  * @since 1.4.0
  */

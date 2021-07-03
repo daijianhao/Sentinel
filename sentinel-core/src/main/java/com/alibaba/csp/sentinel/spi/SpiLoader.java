@@ -64,6 +64,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <li>Load instance by alias name or provider class.</li>
  * </ul>
  *
+ * Spi扩展加载器
+ *
  * @author Eric Zhao
  * @author cdfive
  * @since 1.4.0
@@ -75,6 +77,9 @@ public final class SpiLoader<S> {
     // Default path for the folder of Provider configuration file
     private static final String SPI_FILE_PREFIX = "META-INF/services/";
 
+    /**
+     * Spi 类名与Spi加载器的对应关系
+     */
     // Cache the SpiLoader instances, key: classname of Service, value: SpiLoader instance
     private static final ConcurrentHashMap<String, SpiLoader> SPI_LOADER_MAP = new ConcurrentHashMap<>();
 
@@ -119,9 +124,11 @@ public final class SpiLoader<S> {
         String className = service.getName();
         SpiLoader<T> spiLoader = SPI_LOADER_MAP.get(className);
         if (spiLoader == null) {
+            //双锁检测，没有则创建
             synchronized (SpiLoader.class) {
                 spiLoader = SPI_LOADER_MAP.get(className);
                 if (spiLoader == null) {
+                    //创建一个Spi加载器
                     SPI_LOADER_MAP.putIfAbsent(className, new SpiLoader<>(service));
                     spiLoader = SPI_LOADER_MAP.get(className);
                 }
@@ -162,12 +169,12 @@ public final class SpiLoader<S> {
 
     /**
      * Load all Provider instances of the specified Service, sorted by order value in class's {@link Spi} annotation
-     *
+     * 加载多个实现类
      * @return Sorted Provider instances list
      */
     public List<S> loadInstanceListSorted() {
         load();
-
+        //根据排序依次加载实现类
         return createInstanceList(sortedClassList);
     }
 
@@ -222,18 +229,21 @@ public final class SpiLoader<S> {
 
     /**
      * Load the first-found Provider instance,if not found, return default Provider instance
-     *
+     * 加载第一个实现类或者默认值
      * @return Provider instance
      */
     public S loadFirstInstanceOrDefault() {
+        //加载扩展类
         load();
 
         for (Class<? extends S> clazz : classList) {
             if (defaultClass == null || clazz != defaultClass) {
+                //没有设置默认扩展实现，则使用第一个满足的创建实现类
                 return createInstance(clazz);
             }
         }
-
+        //如果classList为空或者没有扩展时
+        //加载默认实现
         return loadDefaultInstance();
     }
 
@@ -249,7 +259,7 @@ public final class SpiLoader<S> {
         if (defaultClass == null) {
             return null;
         }
-
+        //使用默认实现类
         return createInstance(defaultClass);
     }
 
@@ -311,22 +321,28 @@ public final class SpiLoader<S> {
      * Load the Provider class from Provider configuration file
      */
     public void load() {
+        //当前扩展类型的spi是否已经加载
         if (!loaded.compareAndSet(false, true)) {
+            //已经加载则返回
             return;
         }
-
+        //从 META-INF/services/ 下查找配置的扩展类
         String fullFileName = SPI_FILE_PREFIX + service.getName();
         ClassLoader classLoader;
-        if (SentinelConfig.shouldUseContextClassloader()) {
+        if (SentinelConfig.shouldUseContextClassloader()) {//使用context加载器
+            //直接使用当前线程的类加载器
             classLoader = Thread.currentThread().getContextClassLoader();
         } else {
+            //使用service的类加载器
             classLoader = service.getClassLoader();
         }
         if (classLoader == null) {
+            //使用系统类加载器
             classLoader = ClassLoader.getSystemClassLoader();
         }
         Enumeration<URL> urls = null;
         try {
+            //获取所有配置文件URL
             urls = classLoader.getResources(fullFileName);
         } catch (IOException e) {
             fail("Error locating SPI configuration file, filename=" + fullFileName + ", classloader=" + classLoader, e);
@@ -366,27 +382,33 @@ public final class SpiLoader<S> {
 
                     Class<S> clazz = null;
                     try {
+                        //获取到class对象，选择不初始化
                         clazz = (Class<S>) Class.forName(line, false, classLoader);
                     } catch (ClassNotFoundException e) {
                         fail("class " + line + " not found", e);
                     }
-
+                    //service不是clazz的实现类，抛出异常
                     if (!service.isAssignableFrom(clazz)) {
                         fail("class " + clazz.getName() + "is not subtype of " + service.getName() + ",SPI configuration file=" + fullFileName);
                     }
 
+                    //加入class集合
                     classList.add(clazz);
                     Spi spi = clazz.getAnnotation(Spi.class);
+                    //获取Spi的别名
                     String aliasName = spi == null || "".equals(spi.value()) ? clazz.getName() : spi.value();
                     if (classMap.containsKey(aliasName)) {
+                        //名称重复
                         Class<? extends S> existClass = classMap.get(aliasName);
                         fail("Found repeat alias name for " + clazz.getName() + " and "
                                 + existClass.getName() + ",SPI configuration file=" + fullFileName);
                     }
+                    //放入名称和class对应关系
                     classMap.put(aliasName, clazz);
 
                     if (spi != null && spi.isDefault()) {
                         if (defaultClass != null) {
+                            //有多个默认值，则抛出异常
                             fail("Found more than one default Provider, SPI configuration file=" + fullFileName);
                         }
                         defaultClass = clazz;
@@ -402,10 +424,12 @@ public final class SpiLoader<S> {
             } catch (IOException e) {
                 fail("error reading SPI configuration file", e);
             } finally {
+                //关闭文件流
                 closeResources(in, br);
             }
         }
 
+        //将SPI扩展类进行排序
         sortedClassList.addAll(classList);
         Collections.sort(sortedClassList, new Comparator<Class<? extends S>>() {
             @Override
@@ -415,7 +439,7 @@ public final class SpiLoader<S> {
 
                 Spi spi2 = o2.getAnnotation(Spi.class);
                 int order2 = spi2 == null ? 0 : spi2.order();
-
+                //根据配置的order排序 升序
                 return Integer.compare(order1, order2);
             }
         });
@@ -457,6 +481,7 @@ public final class SpiLoader<S> {
         if (spi != null) {
             singleton = spi.isSingleton();
         }
+        //根据是否单例，创建实现类
         return createInstance(clazz, singleton);
     }
 
@@ -471,6 +496,7 @@ public final class SpiLoader<S> {
         S instance = null;
         try {
             if (singleton) {
+                //单例则双锁检测 创建实现类
                 instance = singletonMap.get(clazz.getName());
                 if (instance == null) {
                     synchronized (this) {
@@ -482,6 +508,7 @@ public final class SpiLoader<S> {
                     }
                 }
             } else {
+                //原型模式创建实现类，强转
                 instance = service.cast(clazz.newInstance());
             }
         } catch (Throwable e) {

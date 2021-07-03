@@ -42,9 +42,12 @@ public final class RuleConstant {
     public static final int AUTHORITY_WHITE = 0;
     public static final int AUTHORITY_BLACK = 1;
 
-    public static final int STRATEGY_DIRECT = 0;
-    public static final int STRATEGY_RELATE = 1;
-    public static final int STRATEGY_CHAIN = 2;
+    /**
+     *限流规则策略
+     */
+    public static final int STRATEGY_DIRECT = 0;//按调用源（设置了orgin时）；按resource（无origin时）
+    public static final int STRATEGY_RELATE = 1;//按调用resource维度
+    public static final int STRATEGY_CHAIN = 2;//按context维度，即调用链
 
     public static final int CONTROL_BEHAVIOR_DEFAULT = 0;
     public static final int CONTROL_BEHAVIOR_WARM_UP = 1;

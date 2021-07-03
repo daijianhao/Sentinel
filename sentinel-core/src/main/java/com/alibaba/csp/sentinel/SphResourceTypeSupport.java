@@ -19,6 +19,9 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.slots.system.SystemRule;
 
 /**
+ *
+ * 表示拥有 申请Entry能力的接口
+ *
  * @author Eric Zhao
  * @since 1.7.0
  */
@@ -43,14 +46,14 @@ public interface SphResourceTypeSupport {
     /**
      * Record statistics and perform rule checking for the given resource with the provided classification.
      *
-     * @param name         the unique name of the protected resource
-     * @param resourceType classification of the resource (e.g. Web or RPC)
+     * @param name         the unique name of the protected resource  资源唯一名称
+     * @param resourceType classification of the resource (e.g. Web or RPC) 资源类型
      * @param trafficType  the traffic type (inbound, outbound or internal). This is used
      *                     to mark whether it can be blocked when the system is unstable,
-     *                     only inbound traffic could be blocked by {@link SystemRule}
+     *                     only inbound traffic could be blocked by {@link SystemRule}  出栈 或 入栈 entry
      * @param batchCount   the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @param prioritized  whether the entry is prioritized
-     * @param args         args for parameter flow control or customized slots
+     * @param prioritized  whether the entry is prioritized 是否优先处理
+     * @param args         args for parameter flow control or customized slots  参数
      * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data)
      * @throws BlockException if the block criteria is met
      */
@@ -59,6 +62,8 @@ public interface SphResourceTypeSupport {
 
     /**
      * Record statistics and perform rule checking for the given resource that indicates an async invocation.
+     *
+     * 异步获取entry
      *
      * @param name         the unique name for the protected resource
      * @param resourceType classification of the resource (e.g. Web or RPC)

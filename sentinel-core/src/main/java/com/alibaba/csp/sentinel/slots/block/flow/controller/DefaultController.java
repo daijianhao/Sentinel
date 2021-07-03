@@ -25,6 +25,10 @@ import com.alibaba.csp.sentinel.util.TimeUtil;
 /**
  * Default throttling controller (immediately reject strategy).
  *
+ * DefaultController是Sentinel默认的策略，核心逻辑是计算出当前时间窗口的count，
+ * 满足qps要求就放行，不满足（prioritized=true）可以借未来时间窗口的quota,如果都不ok，则直接拒绝
+ *
+ *
  * @author jialiang.linjl
  * @author Eric Zhao
  */
@@ -47,19 +51,26 @@ public class DefaultController implements TrafficShapingController {
 
     @Override
     public boolean canPass(Node node, int acquireCount, boolean prioritized) {
+        //1.计算当前窗口计数之和
         int curCount = avgUsedTokens(node);
-        if (curCount + acquireCount > count) {
+        //2.比较当前流量与规则限制
+        if (curCount + acquireCount > count) {//超过了设置的值
+            //3.即使超限，如果prioritized设为true，则认为是重要业务，可以尝试让业务线程sleep到下一个窗口，借用下一个窗口的计数
             if (prioritized && grade == RuleConstant.FLOW_GRADE_QPS) {
                 long currentTime;
                 long waitInMs;
                 currentTime = TimeUtil.currentTimeMillis();
+                //尝试占用下一个窗口的资源
                 waitInMs = node.tryOccupyNext(currentTime, acquireCount, count);
                 if (waitInMs < OccupyTimeoutProperty.getOccupyTimeout()) {
+                    //增加borrow array的pass数
                     node.addWaitingRequest(currentTime + waitInMs, acquireCount);
+                    //增加occupied passs数
                     node.addOccupiedPass(acquireCount);
+                    //等待
                     sleep(waitInMs);
 
-                    // PriorityWaitException indicates that the request will pass after waiting for {@link @waitInMs}.
+                    // PriorityWaitException indicates that the request will pass after waiting for {@link @waitInMs} .
                     throw new PriorityWaitException(waitInMs);
                 }
             }
