@@ -141,6 +141,8 @@ public class NodeSelectorSlot extends AbstractLinkedProcessorSlot<Object> {
      *  因此这个node实际上可以作为同一个resource的信息统计的入口
      *  当 context 的 name不同时，就可以在相同resource下起到区分名称空间的效果
      *
+     *  todo 这里的map相当于 context ==> Node ,即 对于同一个资源，不同的线程同时访问 会记录多个 node，这个node相当于 当前资源的所有访问入口
+     *
      */
     private volatile Map<String, DefaultNode> map = new HashMap<String, DefaultNode>(10);
 
@@ -165,8 +167,9 @@ public class NodeSelectorSlot extends AbstractLinkedProcessorSlot<Object> {
          * The answer is all {@link DefaultNode}s with same resource name share one
          * {@link ClusterNode}. See {@link ClusterBuilderSlot} for detail.
          */
+        //todo 同一个resource共享chain，所以chain里的Slot也是共享的，这里context.getName()默认返回的都是同一个名字
         //双锁检测
-        DefaultNode node = map.get(context.getName());
+        DefaultNode node = map.get(context.getName());//
         if (node == null) {
             synchronized (this) {
                 node = map.get(context.getName());
